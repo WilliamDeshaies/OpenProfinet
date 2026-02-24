@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     CLI::Option *device = configure->add_option("device", "The current name of the device to configure. Use EMPTY for blank string.")
             ->required(true);
     std::string configureInterfaceName;
-    configure->add_option("-i,--interface", configureInterfaceName, "Interface to use");
+    configure->add_option("-I,--interface", configureInterfaceName, "Interface to use");
     configure->add_option("-t,--timeout", timeout, "Time to search for devices in milliseconds");
 
     std::string newName;
