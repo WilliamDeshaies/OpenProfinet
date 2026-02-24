@@ -7,13 +7,16 @@ int main(int argc, char **argv) {
     app.require_subcommand();
 
     CLI::App *search = app.add_subcommand("search", "Search for Profinet devices on the network.");
-    CLI::Option *interface = search->add_option("-i,--interface", "Interface to use");
+    std::string interfaceName;
+    CLI::Option *interface = search->add_option("-i,--interface", interfaceName, "Interface to use");
     int timeout = 1000;
     search->add_option("-t,--timeout", timeout, "Time to search for devices in milliseconds");
 
     CLI::App *configure = app.add_subcommand("configure", "Configure Profinet devices on the network.");
     CLI::Option *device = configure->add_option("device", "The current name of the device to configure. Use EMPTY for blank string.")
             ->required(true);
+    std::string configureInterfaceName;
+    configure->add_option("-i,--interface", configureInterfaceName, "Interface to use");
     configure->add_option("-t,--timeout", timeout, "Time to search for devices in milliseconds");
 
     std::string newName;
@@ -33,11 +36,10 @@ int main(int argc, char **argv) {
 
     try {
         if (*search) {
-            ProfinetTool profinetTool(timeout);
-            if (!interface->empty()) profinetTool = ProfinetTool(interface->as<std::string>(), timeout);
+            ProfinetTool profinetTool = interface->empty() ? ProfinetTool(timeout) : ProfinetTool(interfaceName, timeout);
             profinetTool.searchForDevices();
         } else if (*configure) {
-            ProfinetTool profinetTool(timeout);
+            ProfinetTool profinetTool = configureInterfaceName.empty() ? ProfinetTool(timeout) : ProfinetTool(configureInterfaceName, timeout);
             profinetTool.configureDevices(deviceName, newName, newIP, newSubnet,
                                           newGateway);
         }
@@ -45,7 +47,6 @@ int main(int argc, char **argv) {
         std::cerr << "Could not run command: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-
 
     return 0;
 }
