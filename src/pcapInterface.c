@@ -87,14 +87,24 @@ void profinet_pcap_callback(unsigned char *args, const struct pcap_pkthdr *packe
     struct ether_header header;
     memcpy(&header, packet, sizeof(header));
 
-    if (header.ether_type != htons(ETH_P_8021Q)) return;
-
     const int packetLength = packetInfo->len;
+    int payloadOffset;
 
-    const int profinetPacketSize = packetLength - (int) sizeof(struct ether_header) - 4;
+    if (header.ether_type == htons(ETH_P_8021Q)) {
+        /* 802.1Q tagged frame: 4-byte VLAN tag after Ethernet header */
+        payloadOffset = (int) sizeof(struct ether_header) + 4;
+    } else if (header.ether_type == htons(0x8892)) {
+        /* Untagged Profinet frame */
+        payloadOffset = (int) sizeof(struct ether_header);
+    } else {
+        return;
+    }
+
+    const int profinetPacketSize = packetLength - payloadOffset;
+    if (profinetPacketSize <= 0) return;
 
     unsigned char profinetPacketRaw[profinetPacketSize];
-    memcpy(profinetPacketRaw, packet + sizeof(struct ether_header) + 4, profinetPacketSize);
+    memcpy(profinetPacketRaw, packet + payloadOffset, profinetPacketSize);
 
     struct profinet_dcp_header dcpHeader;
     memcpy(&dcpHeader, profinetPacketRaw, sizeof(dcpHeader));
